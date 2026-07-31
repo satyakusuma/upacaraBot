@@ -1,0 +1,41 @@
+name: Check Istana Registration
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Berjalan setiap 15 menit
+  workflow_dispatch:        # Memungkinkan run manual lewat GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run checker
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_ACTIONS: "true"
+        run: python bot_checker.py
+
+      - name: Commit and push state
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add bot_state.json || true
+          git commit -m "chore: update bot state [skip ci]" || true
+          git push || true
